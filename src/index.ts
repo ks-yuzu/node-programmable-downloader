@@ -6,7 +6,7 @@ import chardet from 'chardet'
 import log4js from 'log4js'
 import deepmerge from 'deepmerge'
 import fs from 'fs'
-import URL from 'url'
+import {URL} from 'url'
 import path from 'path'
 import _ from 'underscore'
 
@@ -176,13 +176,13 @@ export default class ProgrammableDownloader {
       .toArray()
       .map(i => $(i).attr('href') || $(i).attr('src'))
       .filter(i => i != null)
-      .map(src => URL.resolve(currentUrl, src!))
+      .map(src => new URL(src!, currentUrl).href)
       .flatMap(i => extractor.fileUrlModifier == null ? i : extractor.fileUrlModifier(i))
 
     if (extractor.additionalExtractor) {
       const {files: additionalUrls} = extractor.additionalExtractor(currentUrl, $)
       if (additionalUrls != null) {
-        urls.push(...additionalUrls.map(href => URL.resolve(currentUrl, href!)))
+        urls.push(...additionalUrls.map(href => new URL(href!, currentUrl).href))
       }
     }
 
@@ -195,12 +195,12 @@ export default class ProgrammableDownloader {
       .toArray()
       .map(i => $(i).attr('href'))
       .filter(i => i != null)
-      .map(href => URL.resolve(currentUrl, href!))
+      .map(href => new URL(href!, currentUrl).href)
 
     if (extractor.additionalExtractor) {
       const {pages: additionalUrls} = extractor.additionalExtractor(currentUrl, $)
       if (additionalUrls != null) {
-        urls.push(...additionalUrls.map(href => URL.resolve(currentUrl, href)))
+        urls.push(...additionalUrls.map(href => new URL(href, currentUrl).href))
       }
     }
 
