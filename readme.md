@@ -21,16 +21,16 @@ const downloader = new ProgrammableDownloader({
       metadataSelectors:      {                                                 // Inner text is extracted as metadata. The value can be used for dirname and all metadata is saved to JSON file.
         'gallery-title': 'h3',
       },
-    }
+    },
     {
       description:            'image details page',
       isMatched:              (url, $) => url.includes(/images/),
-      fileSelector:           'div.media > picture > img,
+      fileSelector:           'div.media > picture > img',
    // pageSelector:           '',
       metadataSelectors:      {
         'name': 'div.media > .name',
       },
-    }
+    },
   ],
   options: {
     saveDir: {
@@ -38,8 +38,8 @@ const downloader = new ProgrammableDownloader({
     },
     file: {
       nameLevel: 2,                                                             // The value of "url.split('/').slice(-nameLevel).join('_')" is used as filename
-    }
-  }
+    },
+  },
 })
 
 downloader.run({dryrun: false})

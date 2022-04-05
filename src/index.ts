@@ -27,10 +27,11 @@ interface Extractor {
   isMatched:           (url: string, $: CheerioAPI) => boolean
   pageSelector:        string
   fileSelector:        string
-  fileUrlModifier:     (url: string) => string
+  fileUrlModifier:     (url: string) => string[]
   metadataSelectors:   {[key: string]: string | {[key: string]: string}},
   metadataModifiler:   (key: string, value: string | string[] | {[key: string]: string}) => string | string[] | {[key: string]: string},
   additionalExtractor: (url: string, $: CheerioAPI) => {files?: string[], pages?: string[]}
+  options:             RecursivePartial<Options>
 }
 
 interface Options {
@@ -70,6 +71,8 @@ export default class ProgrammableDownloader {
 
   private readonly axios
   private          dryrun = false // TODO: pass as arguments
+
+  private          currentExtractor?: Partial<Extractor>
 
 
   constructor(params: ProgrammableDownloaderParams) {
@@ -112,6 +115,8 @@ export default class ProgrammableDownloader {
     const $ = cheerio.load((await this.axios.get(url)).data)
 
     for (const extractor of this.extractors) {
+      this.currentExtractor = extractor
+
       if ( extractor.isMatched != null && !extractor.isMatched(url, $) ) { continue }
       if ( extractor.description != null ) {
         logger.debug(`Match extractor: ${extractor.description}`)
@@ -209,8 +214,11 @@ export default class ProgrammableDownloader {
 
 
   private _getSaveDir(metadata: {[key: string]: any}) {
-    const subDirs = this.options.saveDir.subDirs.map(dirname => _.template(dirname)(metadata).replace(/[/%*:|"<>]/g, '-'))
-    const saveDir = path.join(this.options.saveDir.root, ...subDirs)
+    const root = this.getOption(['saveDir', 'root'])
+    const subDirs = this
+      .getOption(['saveDir', 'subDirs'])!
+      .map((dirname: string) => _.template(dirname)(metadata).replace(/[/%*:|"<>]/g, '-'))
+    const saveDir = path.join(root, ...subDirs)
     fs.mkdirSync(saveDir, {recursive: true})
 
     return saveDir
@@ -220,7 +228,7 @@ export default class ProgrammableDownloader {
   private _getFilename(fileUrl: string) {
     const domainAndPath = fileUrl.replace(/^https?:\/\//, '').replace(/\?.*$/, '')
 
-    const nSlices = this.options.file.nameLevel
+    const nSlices = this.getOption(['file', 'nameLevel'])
     const filename = domainAndPath.split('/').slice(-nSlices).join('_')
     if ( !filename ) {
       throw new Error('failed to generate filename')
@@ -233,6 +241,7 @@ export default class ProgrammableDownloader {
   private async _saveFiles(fileUrls: string[], metadata: {[key: string]: any}) {
     const saveDir = this._getSaveDir(metadata)
     logger.debug({saveDir})
+    logger.debug({metadata: JSON.stringify(metadata, null, 2)})
     fs.writeFileSync(path.join(saveDir, 'info.json'), JSON.stringify(metadata))
 
     for (const fileUrl of fileUrls) {
@@ -246,10 +255,11 @@ export default class ProgrammableDownloader {
 
       try {
         const {data: fileData} = await this.axios.get(encodeURI(fileUrl), {transformResponse: d => d})
-        if ( fileData.byteLength < this.options.file.minSize ) {
-          logger.warn(`this file is less than ${this.options.file.minSize} byte. skip: ${fileUrl}`)
+        const minFileSize = this.getOption(['file', 'minSize'])
+        if ( fileData.byteLength < minFileSize ) {
+          logger.warn(`this file is less than ${minFileSize} byte. skip: ${fileUrl}`)
         }
-        else if ( this.options.file.overwrite !== true && fs.existsSync(filepath) ) {
+        else if ( this.getOption(['file', 'overwrite']) !== true && fs.existsSync(filepath) ) {
           logger.info(`this file is already downloaded. skip: ${fileUrl}`)
         }
         else {
@@ -261,5 +271,24 @@ export default class ProgrammableDownloader {
         logger.error(e)
       }
     }
+  }
+
+  private getOption(path: string[]) {
+    const dig = ((obj: {[key: string]: any} | null, keys: string[]) => {
+      if (path == null) { return null }
+
+      let p = obj
+      for (const key of keys) {
+        if (p == null) { return undefined }
+
+        // if (typeof key === 'function') { p = key(p) }
+        // else
+        { p = p[key] }
+      }
+      return p as any
+    })
+
+    return dig(this.currentExtractor?.options ?? null, path)
+        ?? dig(this.options, path)
   }
 }
