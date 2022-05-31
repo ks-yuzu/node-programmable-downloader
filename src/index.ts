@@ -104,6 +104,7 @@ export default class ProgrammableDownloader {
 
     const {url} = urlEntry
     let metadata = urlEntry.metadata || {}
+    metadata.url = url
     logger.debug({url, metadata})
 
     if ( this.processedPages[url] ) {
