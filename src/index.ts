@@ -27,7 +27,7 @@ interface Extractor {
   isMatched:           (url: string, $: CheerioAPI) => boolean
   pageSelector:        string
   fileSelector:        string
-  fileUrlModifier:     (url: string) => string[]
+  fileUrlModifier:     (fileUrl: string, currentPageUrl: string) => string[]
   metadataSelectors:   {[key: string]: string | {[key: string]: string}},
   metadataModifiler:   (key: string, value: string | string[] | {[key: string]: string}) => string | string[] | {[key: string]: string},
   additionalExtractor: (url: string, $: CheerioAPI) => {files?: string[], pages?: string[]}
@@ -182,7 +182,7 @@ export default class ProgrammableDownloader {
       .map(i => $(i).attr('href') || $(i).attr('src'))
       .filter(i => i != null)
       .map(src => new URL(src!, currentUrl).href)
-      .flatMap(i => extractor.fileUrlModifier == null ? i : extractor.fileUrlModifier(i))
+      .flatMap(i => extractor.fileUrlModifier == null ? i : extractor.fileUrlModifier(i, currentUrl))
 
     if (extractor.additionalExtractor) {
       const {files: additionalUrls} = extractor.additionalExtractor(currentUrl, $)
