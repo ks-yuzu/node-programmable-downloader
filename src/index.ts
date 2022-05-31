@@ -179,7 +179,7 @@ export default class ProgrammableDownloader {
   private _getFileUrls($: CheerioAPI, extractor: Partial<Extractor>, currentUrl: string) {
     const urls = $(extractor.fileSelector)
       .toArray()
-      .map(i => $(i).attr('href') || $(i).attr('src'))
+      .map(i => $(i).attr('href') || $(i).attr('src') || $(i).attr('data-src'))
       .filter(i => i != null)
       .map(src => new URL(src!, currentUrl).href)
       .flatMap(i => extractor.fileUrlModifier == null ? i : extractor.fileUrlModifier(i, currentUrl))
