@@ -30,7 +30,11 @@ interface Extractor {
   fileUrlModifier:     (fileUrl: string, currentPageUrl: string) => string[]
   metadataSelectors:   {[key: string]: string | {[key: string]: string}},
   metadataModifiler:   (key: string, value: string | string[] | {[key: string]: string}) => string | string[] | {[key: string]: string},
-  additionalExtractor: (url: string, $: CheerioAPI) => {files?: string[], pages?: string[]}
+  additionalExtractor: {
+    file?: (url: string, $: CheerioAPI) => string[],
+    page?: (url: string, $: CheerioAPI) => string[],
+    metadata?: (url: string, $: CheerioAPI) => {[key: string]: string | string[] | {[key: string]: string}},
+  }
   options:             RecursivePartial<Options>
 }
 
@@ -123,7 +127,7 @@ export default class ProgrammableDownloader {
         logger.debug(`Match extractor: ${extractor.description}`)
       }
 
-      metadata = Object.assign({}, metadata, this._getMetadata($, extractor))
+      metadata = Object.assign({}, metadata, this._getMetadata($, extractor, url))
 
       const fileUrls = this._getFileUrls($, extractor, url)
       logger.debug({'extracted file URLs': fileUrls})
@@ -136,10 +140,7 @@ export default class ProgrammableDownloader {
   }
 
 
-  private _getMetadata(
-    $: CheerioAPI,
-    extractor: Partial<Extractor>
-  ) {
+  private _getMetadata($: CheerioAPI, extractor: Partial<Extractor>, currentUrl: string) {
     const metadata = Object
       .entries(extractor.metadataSelectors || {})
       .reduce((acc, [fieldName, selector]) => {
@@ -173,6 +174,13 @@ export default class ProgrammableDownloader {
         return acc
       }, {} as {[key: string]: string | string[] | {[key: string]: string}})
 
+    if (extractor.additionalExtractor?.metadata) {
+      const additionalMetadata = extractor.additionalExtractor.metadata(currentUrl, $)
+      if (additionalMetadata != null) {
+        Object.assign(metadata, additionalMetadata)
+      }
+    }
+
     return metadata
   }
 
@@ -185,8 +193,8 @@ export default class ProgrammableDownloader {
       .map(src => new URL(src!, currentUrl).href)
       .flatMap(i => extractor.fileUrlModifier == null ? i : extractor.fileUrlModifier(i, currentUrl))
 
-    if (extractor.additionalExtractor) {
-      const {files: additionalUrls} = extractor.additionalExtractor(currentUrl, $)
+    if (extractor.additionalExtractor?.file) {
+      const additionalUrls = extractor.additionalExtractor.file(currentUrl, $)
       if (additionalUrls != null) {
         urls.push(...additionalUrls.map(href => new URL(href!, currentUrl).href))
       }
@@ -203,8 +211,8 @@ export default class ProgrammableDownloader {
       .filter(i => i != null)
       .map(href => new URL(href!, currentUrl).href)
 
-    if (extractor.additionalExtractor) {
-      const {pages: additionalUrls} = extractor.additionalExtractor(currentUrl, $)
+    if (extractor.additionalExtractor?.page) {
+      const additionalUrls = extractor.additionalExtractor.page(currentUrl, $)
       if (additionalUrls != null) {
         urls.push(...additionalUrls.map(href => new URL(href, currentUrl).href))
       }
