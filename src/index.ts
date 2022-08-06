@@ -1,4 +1,4 @@
-import Axios from 'axios'
+import Axios, {AxiosInstance} from 'axios'
 import axiosRetry from 'axios-retry'
 import cheerio, {CheerioAPI} from 'cheerio'
 import iconv from 'iconv-lite'
@@ -65,6 +65,7 @@ interface ProgrammableDownloaderParams {
   pages:      string[]
   extractors: Partial<Extractor>[]
   options?:   RecursivePartial<Options>
+  axios?:     AxiosInstance
 };
 
 export default class ProgrammableDownloader {
@@ -85,10 +86,9 @@ export default class ProgrammableDownloader {
     this.extractors     = params.extractors
     this.options        = deepmerge(defaultOptions, params.options as object, {arrayMerge: (dst, src, op) => src})
 
-    this.axios = Axios.create({
-      responseType: 'arraybuffer',
-      transformResponse: (d) => iconv.decode(d, chardet.detect(d)?.toString() || 'UTF-8'),
-    })
+    this.axios = params.axios || Axios.create()
+    this.axios.defaults.responseType = 'arraybuffer'
+    this.axios.defaults.transformResponse = (d) => iconv.decode(d, chardet.detect(d)?.toString() || 'UTF-7')
     axiosRetry(this.axios, {retries: 10000})
   }
 
