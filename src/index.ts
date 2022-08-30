@@ -253,7 +253,8 @@ export default class ProgrammableDownloader {
     logger.debug({metadata: JSON.stringify(metadata, null, 2)})
     fs.writeFileSync(path.join(saveDir, 'info.json'), JSON.stringify(metadata))
 
-    for (const fileUrl of fileUrls) {
+    for (const _fileUrl of fileUrls) {
+      const fileUrl  = decodeURI(_fileUrl)
       const filename = this._getFilename(fileUrl)
       const filepath = path.join(saveDir, filename)
 
