@@ -29,7 +29,7 @@ interface Extractor {
   fileSelector:        string
   fileUrlModifier:     (fileUrl: string, currentPageUrl: string) => string[]
   metadataSelectors:   {[key: string]: string | {[key: string]: string}},
-  metadataModifiler:   (key: string, value: string | string[] | {[key: string]: string}) => string | string[] | {[key: string]: string},
+  metadataModifier:    (key: string, value: string | string[] | {[key: string]: string}) => string | string[] | {[key: string]: string},
   additionalExtractor: {
     file?: (url: string, $: CheerioAPI) => string[],
     page?: (url: string, $: CheerioAPI) => string[],
@@ -149,8 +149,8 @@ export default class ProgrammableDownloader {
             const values = $(selector).toArray().map(i => $(i).text().trim())
             acc[fieldName] = values.length === 1 ? values.shift()! : values
 
-            if (extractor.metadataModifiler != null) {
-              acc[fieldName] = extractor.metadataModifiler(fieldName, acc[fieldName])
+            if (extractor.metadataModifier != null) {
+              acc[fieldName] = extractor.metadataModifier(fieldName, acc[fieldName])
             }
             break
           }
@@ -165,8 +165,8 @@ export default class ProgrammableDownloader {
             }
             acc[fieldName] = kv
 
-            if (extractor.metadataModifiler != null) {
-              acc[fieldName] = extractor.metadataModifiler(fieldName, acc[fieldName])
+            if (extractor.metadataModifier != null) {
+              acc[fieldName] = extractor.metadataModifier(fieldName, acc[fieldName])
             }
             break
           }
