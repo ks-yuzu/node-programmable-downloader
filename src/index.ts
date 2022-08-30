@@ -258,6 +258,11 @@ export default class ProgrammableDownloader {
       const filename = this._getFilename(fileUrl)
       const filepath = path.join(saveDir, filename)
 
+      if (this.getOption(['file', 'overwrite']) !== true && fs.existsSync(filepath)) {
+        logger.info(`this file is already downloaded. skip: ${fileUrl}`)
+        continue
+      }
+
       if (this.dryrun) {
         logger.info(`dryrun: download "${fileUrl}" to "${filepath}"`)
         continue
@@ -268,9 +273,6 @@ export default class ProgrammableDownloader {
         const minFileSize = this.getOption(['file', 'minSize'])
         if ( fileData.byteLength < minFileSize ) {
           logger.warn(`this file is less than ${minFileSize} byte. skip: ${fileUrl}`)
-        }
-        else if ( this.getOption(['file', 'overwrite']) !== true && fs.existsSync(filepath) ) {
-          logger.info(`this file is already downloaded. skip: ${fileUrl}`)
         }
         else {
           fs.writeFileSync(filepath, Buffer.from(fileData), 'binary')
