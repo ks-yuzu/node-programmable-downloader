@@ -119,10 +119,13 @@ export default class ProgrammableDownloader {
 
     const $ = cheerio.load((await this.axios.get(url)).data)
 
+    let foundExtractor = false
     for (const extractor of this.extractors) {
       this.currentExtractor = extractor
 
       if ( extractor.isMatched != null && !extractor.isMatched(url, $) ) { continue }
+      foundExtractor = true
+
       if ( extractor.description != null ) {
         logger.debug(`Match extractor: ${extractor.description}`)
       }
@@ -136,6 +139,10 @@ export default class ProgrammableDownloader {
       const pageUrls = this._getPageUrls($, extractor, url)
       logger.debug({'extracted page URLs': pageUrls})
       this.pages.push(...pageUrls.map(url => ({url, metadata})))
+    }
+
+    if (!foundExtractor) {
+      logger.warn('match no exctactor')
     }
   }
 
