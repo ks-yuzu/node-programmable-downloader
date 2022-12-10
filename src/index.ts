@@ -97,7 +97,7 @@ export default class ProgrammableDownloader {
     if (options?.dryrun) { this.dryrun = options.dryrun }
 
     while (this.pages.length > 0) {
-      await this._processPage()
+      await this._processPage().catch(e => console.error(e))
     }
   }
 
