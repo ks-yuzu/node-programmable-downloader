@@ -1,14 +1,14 @@
 import Axios, {AxiosInstance} from 'axios'
-import axiosRetry from 'axios-retry'
-import cheerio, {CheerioAPI} from 'cheerio'
-import iconv from 'iconv-lite'
-import chardet from 'chardet'
-import log4js from 'log4js'
-import deepmerge from 'deepmerge'
-import fs from 'fs'
-import {URL} from 'url'
-import path from 'path'
-import _ from 'underscore'
+import axiosRetry             from 'axios-retry'
+import cheerio, {CheerioAPI}  from 'cheerio'
+import iconv                  from 'iconv-lite'
+import chardet                from 'chardet'
+import log4js                 from 'log4js'
+import deepmerge              from 'deepmerge'
+import fs                     from 'fs'
+import {URL}                  from 'url'
+import path                   from 'path'
+import _                      from 'underscore'
 
 const logger = log4js.getLogger()
 logger.level = 'debug'
@@ -195,8 +195,10 @@ export default class ProgrammableDownloader {
   private _getFileUrls($: CheerioAPI, extractor: Partial<Extractor>, currentUrl: string) {
     const urls = $(extractor.fileSelector)
       .toArray()
-      .map(i => $(i).attr('href') || $(i).attr('src') || $(i).attr('data-src'))
+      .map(i => [$(i).attr('href'), $(i).attr('src'), $(i).attr('data-src')])
+      .flat()
       .filter(i => i != null)
+      .filter(i => ! i!.startsWith('data:'))
       .map(src => new URL(src!, currentUrl).href)
       .flatMap(i => extractor.fileUrlModifier == null ? i : extractor.fileUrlModifier(i, currentUrl))
 
